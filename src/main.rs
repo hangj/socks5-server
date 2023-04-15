@@ -94,7 +94,7 @@ async fn request(conn: &mut TcpStream) -> io::Result<()> {
                 }
             };
 
-            println!("connected to server");
+            println!("connected to server: {:?}", server_stream.peer_addr()?);
 
             io::copy_bidirectional(conn, &mut server_stream).await?;
         }
