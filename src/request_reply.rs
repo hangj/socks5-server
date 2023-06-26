@@ -1,6 +1,9 @@
+#![allow(dead_code)]
+
 /// https://www.rfc-editor.org/rfc/rfc1928.html
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 
+use inttype_enum::IntType;
 use tokio::io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 /// Once the method-dependent subnegotiation has completed, the client
@@ -63,7 +66,8 @@ impl Request {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, IntType)]
+#[repr(u8)]
 pub enum Cmd {
     /// CONNECT
     ///
@@ -75,7 +79,7 @@ pub enum Cmd {
     /// that the SOCKS server will use DST.ADDR and DST.PORT, and the
     /// client-side source address and port in evaluating the CONNECT
     /// request.
-    Connect,
+    Connect = 0x01,
     ///BIND
     ///
     /// The BIND request is used in protocols which require the client to
@@ -101,7 +105,7 @@ pub enum Cmd {
     /// connection succeeds or fails.
     /// In the second reply, the BND.PORT and BND.ADDR fields contain the
     /// address and port number of the connecting host.
-    Bind,
+    Bind = 0x02,
     /// UDP ASSOCIATE
     ///
     /// The UDP ASSOCIATE request is used to establish an association within
@@ -119,39 +123,7 @@ pub enum Cmd {
     /// In the reply to a UDP ASSOCIATE request, the BND.PORT and BND.ADDR
     /// fields indicate the port number/address where the client MUST send
     /// UDP request messages to be relayed.
-    Udp,
-}
-
-impl Cmd {
-    const CONNECT: u8 = 0x01;
-    const BIND: u8 = 0x02;
-    const UDP: u8 = 0x03;
-}
-
-impl TryFrom<u8> for Cmd {
-    type Error = io::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            Self::CONNECT => Ok(Self::Connect),
-            Self::BIND => Ok(Self::Bind),
-            Self::UDP => Ok(Self::Udp),
-            _ => Err(Self::Error::new(
-                io::ErrorKind::Unsupported,
-                format!("unsupported command {value}"),
-            )),
-        }
-    }
-}
-
-impl Into<u8> for Cmd {
-    fn into(self) -> u8 {
-        match self {
-            Self::Connect => Self::CONNECT,
-            Self::Bind => Self::BIND,
-            Self::Udp => Self::UDP,
-        }
-    }
+    Udp = 0x03,
 }
 
 #[derive(Debug, Clone)]
@@ -231,43 +203,12 @@ pub enum InnerAddress {
     DomainAddr(String, u16),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, IntType)]
+#[repr(u8)]
 pub enum AddressType {
-    Ipv4,
-    Domain,
-    Ipv6,
-}
-
-impl AddressType {
-    const ATYP_IPV4: u8 = 0x01;
-    const ATYP_DOMAIN: u8 = 0x03; // fully-qualified domain name
-    const ATYP_IPV6: u8 = 0x04;
-}
-
-impl TryFrom<u8> for AddressType {
-    type Error = io::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            Self::ATYP_IPV4 => Ok(Self::Ipv4),
-            Self::ATYP_DOMAIN => Ok(Self::Domain),
-            Self::ATYP_IPV6 => Ok(Self::Ipv6),
-            _ => Err(Self::Error::new(
-                io::ErrorKind::Unsupported,
-                format!("Unsupported atyp: {value}"),
-            )),
-        }
-    }
-}
-
-impl Into<u8> for AddressType {
-    fn into(self) -> u8 {
-        match self {
-            AddressType::Ipv4 => Self::ATYP_IPV4,
-            AddressType::Domain => Self::ATYP_DOMAIN,
-            AddressType::Ipv6 => Self::ATYP_IPV6,
-        }
-    }
+    Ipv4 = 0x01,
+    Domain = 0x03,
+    Ipv6 = 0x04,
 }
 
 ///    The SOCKS request information is sent by the client as soon as it has
@@ -328,48 +269,19 @@ impl Reply {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, IntType)]
+#[repr(u8)]
 pub enum ReplyStatus {
-    Succeeded,
-    GeneralSocksServerFailure,
-    ConnectionNotAllowed,
-    NetworkUnreachable,
-    HostUnreachable,
-    ConnectionRefused,
-    TtlExpired,
-    CommandNotSupported,
-    AddressTypeNotSupported,
-    Unassigned,
-}
-
-impl ReplyStatus {
-    pub const SUCCEEDED: u8 = 0x00;
-    pub const GENERAL_SOCKS_SERVER_FAILURE: u8 = 0x01;
-    pub const CONNECTION_NOT_ALLOWED: u8 = 0x02;
-    pub const NETWORK_UNREACHABLE: u8 = 0x03;
-    pub const HOST_UNREACHABLE: u8 = 0x04;
-    pub const CONNECTION_REFUSED: u8 = 0x05;
-    pub const TTL_EXPIRED: u8 = 0x06;
-    pub const COMMAND_NOT_SUPPORTED: u8 = 0x07;
-    pub const ADDRESSTYPE_NOT_SUPPORTED: u8 = 0x08;
-    pub const UNASSIGNED: u8 = 0xff;
-}
-
-impl From<u8> for ReplyStatus {
-    fn from(value: u8) -> Self {
-        match value {
-            Self::SUCCEEDED => Self::Succeeded,
-            Self::GENERAL_SOCKS_SERVER_FAILURE => Self::GeneralSocksServerFailure,
-            Self::CONNECTION_NOT_ALLOWED => Self::ConnectionNotAllowed,
-            Self::NETWORK_UNREACHABLE => Self::NetworkUnreachable,
-            Self::HOST_UNREACHABLE => Self::HostUnreachable,
-            Self::CONNECTION_REFUSED => Self::ConnectionRefused,
-            Self::TTL_EXPIRED => Self::TtlExpired,
-            Self::COMMAND_NOT_SUPPORTED => Self::CommandNotSupported,
-            Self::ADDRESSTYPE_NOT_SUPPORTED => Self::AddressTypeNotSupported,
-            _ => Self::Unassigned,
-        }
-    }
+    Succeeded = 0x00,
+    GeneralSocksServerFailure = 0x01,
+    ConnectionNotAllowed = 0x02,
+    NetworkUnreachable = 0x03,
+    HostUnreachable = 0x04,
+    ConnectionRefused = 0x05,
+    TtlExpired = 0x06,
+    CommandNotSupported = 0x07,
+    AddressTypeNotSupported = 0x08,
+    Unassigned = 0xff,
 }
 
 impl From<io::ErrorKind> for ReplyStatus {
@@ -399,23 +311,6 @@ impl From<io::ErrorKind> for ReplyStatus {
             io::ErrorKind::OutOfMemory => todo!(),
             io::ErrorKind::Other => todo!(),
             _ => Self::GeneralSocksServerFailure,
-        }
-    }
-}
-
-impl Into<u8> for ReplyStatus {
-    fn into(self) -> u8 {
-        match self {
-            ReplyStatus::Succeeded => Self::SUCCEEDED,
-            ReplyStatus::GeneralSocksServerFailure => Self::GENERAL_SOCKS_SERVER_FAILURE,
-            ReplyStatus::ConnectionNotAllowed => Self::CONNECTION_NOT_ALLOWED,
-            ReplyStatus::NetworkUnreachable => Self::NETWORK_UNREACHABLE,
-            ReplyStatus::HostUnreachable => Self::HOST_UNREACHABLE,
-            ReplyStatus::ConnectionRefused => Self::CONNECTION_REFUSED,
-            ReplyStatus::TtlExpired => Self::TTL_EXPIRED,
-            ReplyStatus::CommandNotSupported => Self::COMMAND_NOT_SUPPORTED,
-            ReplyStatus::AddressTypeNotSupported => Self::ADDRESSTYPE_NOT_SUPPORTED,
-            ReplyStatus::Unassigned => Self::UNASSIGNED,
         }
     }
 }

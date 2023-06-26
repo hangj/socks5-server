@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /// https://www.rfc-editor.org/rfc/rfc1928.html
 /// Procedure for TCP-based clients
 ///
@@ -12,6 +14,7 @@
 ///    request, and either establishes the appropriate connection or denies
 ///    it.
 
+use inttype_enum::IntType;
 use tokio::io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 ///
@@ -24,7 +27,6 @@ use tokio::io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 /// | 1  |    1     | 1 to 255 |  
 /// +----+----------+----------+  
 ///
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct MethodSelectionRequest {
     pub ver: u8, // 0x05
@@ -44,7 +46,7 @@ impl MethodSelectionRequest {
             nmethods,
             methods: methods
                 .into_iter()
-                .map(|m| m.into())
+                .map(|m| m.try_into().unwrap_or(Method::UnacceptableMethod))
                 .collect::<Vec<Method>>(),
         })
     }
@@ -80,7 +82,7 @@ impl MethodSelectionResponse {
     }
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
         let ver = s.read_u8().await?;
-        let method = s.read_u8().await?.into();
+        let method = s.read_u8().await?.try_into().unwrap_or(Method::UnacceptableMethod);
         Ok(Self { ver, method })
     }
     pub async fn writeto_stream<S: AsyncWrite + Unpin>(&self, stream: &mut S) -> io::Result<()> {
@@ -107,39 +109,11 @@ impl Default for MethodSelectionResponse {
 /// o  X'03' to X'7F' IANA ASSIGNED
 /// o  X'80' to X'FE' RESERVED FOR PRIVATE METHODS
 /// o  X'FF' NO ACCEPTABLE METHODS
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, IntType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u8)]
 pub enum Method {
-    NoAuthenticationRequired,
-    Gssapi,
-    UsernamePassword,
-    UnacceptableMethod,
-}
-
-impl Method {
-    const NO_AUTHENTICATION_REQUIRED: u8 = 0x00;
-    const GSSAPI: u8 = 0x01;
-    const USERNAME_PASSWORD: u8 = 0x02;
-    const UNACCEPTABLE_METHOD: u8 = 0xff;
-}
-
-impl From<u8> for Method {
-    fn from(value: u8) -> Self {
-        match value {
-            Self::NO_AUTHENTICATION_REQUIRED => Self::NoAuthenticationRequired,
-            Self::GSSAPI => Self::Gssapi,
-            Self::USERNAME_PASSWORD => Self::UsernamePassword,
-            _ => Self::UnacceptableMethod,
-        }
-    }
-}
-
-impl Into<u8> for Method {
-    fn into(self) -> u8 {
-        match self {
-            Method::NoAuthenticationRequired => Self::NO_AUTHENTICATION_REQUIRED,
-            Method::Gssapi => Self::GSSAPI,
-            Method::UsernamePassword => Self::USERNAME_PASSWORD,
-            Method::UnacceptableMethod => Self::UNACCEPTABLE_METHOD,
-        }
-    }
+    NoAuthenticationRequired = 0x00,
+    Gssapi = 0x01,
+    UsernamePassword = 0x02,
+    UnacceptableMethod = 0xff,
 }

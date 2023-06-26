@@ -98,13 +98,11 @@ async fn request(conn: &mut TcpStream) -> io::Result<()> {
 
             io::copy_bidirectional(conn, &mut server_stream).await?;
         }
-        _ => {
+        Cmd::Bind | Cmd::Udp => {
             Reply::new(ReplyStatus::CommandNotSupported, request.address.clone())
                 .writeto_stream(conn)
                 .await?;
         }
-        // Cmd::Bind => todo!(),
-        // Cmd::Udp => todo!(),
     }
     Ok(())
 }
