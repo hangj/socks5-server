@@ -14,4 +14,8 @@ anyhow = "1.0.70"
 byteorder = "1.4.3"
 bytes = "1.4.0"
 tokio = { version = "1.27.0", features = ["io-util", "net", "rt-multi-thread", "macros"] }
-inttype-enum = "0.1.0"
+inttype-enum = "0.1.2"
+
+
+[patch.crates-io]
+# inttype-enum = {path="../inttype-enum"}

@@ -46,7 +46,7 @@ impl MethodSelectionRequest {
             nmethods,
             methods: methods
                 .into_iter()
-                .map(|m| m.try_into().unwrap_or(Method::UnacceptableMethod))
+                .map(|m| m.into())
                 .collect::<Vec<Method>>(),
         })
     }
@@ -82,7 +82,7 @@ impl MethodSelectionResponse {
     }
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
         let ver = s.read_u8().await?;
-        let method = s.read_u8().await?.try_into().unwrap_or(Method::UnacceptableMethod);
+        let method = s.read_u8().await?.into();
         Ok(Self { ver, method })
     }
     pub async fn writeto_stream<S: AsyncWrite + Unpin>(&self, stream: &mut S) -> io::Result<()> {
@@ -115,5 +115,6 @@ pub enum Method {
     NoAuthenticationRequired = 0x00,
     Gssapi = 0x01,
     UsernamePassword = 0x02,
+    #[default]
     UnacceptableMethod = 0xff,
 }

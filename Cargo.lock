@@ -43,9 +43,9 @@ dependencies = [
 
 [[package]]
 name = "inttype-enum"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8643fef2f9f73c501ade7f3d6b3582e5a6a5db803d0abee8c5e62249bb543fb"
+checksum = "42afc353431e4265a4463dd1d6cd8537769e3136685ce9579918ee36b1f0dc3f"
 dependencies = [
  "quote",
  "syn",
