@@ -1,18 +1,18 @@
 #![allow(dead_code)]
 
-/// https://www.rfc-editor.org/rfc/rfc1928.html
-/// Procedure for TCP-based clients
-///
-///    When a TCP-based client wishes to establish a connection to an object
-///    that is reachable only via a firewall (such determination is left up
-///    to the implementation), it must open a TCP connection to the
-///    appropriate SOCKS port on the SOCKS server system.  The SOCKS service
-///    is conventionally located on TCP port 1080.  If the connection
-///    request succeeds, the client enters a negotiation for the
-///    authentication method to be used, authenticates with the chosen
-///    method, then sends a relay request.  The SOCKS server evaluates the
-///    request, and either establishes the appropriate connection or denies
-///    it.
+//! https://www.rfc-editor.org/rfc/rfc1928.html
+//! Procedure for TCP-based clients
+//!
+//!    When a TCP-based client wishes to establish a connection to an object
+//!    that is reachable only via a firewall (such determination is left up
+//!    to the implementation), it must open a TCP connection to the
+//!    appropriate SOCKS port on the SOCKS server system.  The SOCKS service
+//!    is conventionally located on TCP port 1080.  If the connection
+//!    request succeeds, the client enters a negotiation for the
+//!    authentication method to be used, authenticates with the chosen
+//!    method, then sends a relay request.  The SOCKS server evaluates the
+//!    request, and either establishes the appropriate connection or denies
+//!    it.
 
 use inttype_enum::IntType;
 use tokio::io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
@@ -53,7 +53,11 @@ impl MethodSelectionRequest {
     pub async fn writeto_stream<S: AsyncWrite + Unpin>(&self, s: &mut S) -> io::Result<()> {
         s.write_u8(self.ver).await?;
         s.write_u8(self.nmethods).await?;
-        let methods = self.methods.iter().map(|m|(*m).into()).collect::<Vec<u8>>();
+        let methods = self
+            .methods
+            .iter()
+            .map(|m| (*m).into())
+            .collect::<Vec<u8>>();
         assert_eq!(self.nmethods as usize, methods.len());
         s.write(&methods).await?;
         Ok(())

@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
             println!("new connection from: {:?}", addr);
             match handle(&mut conn).await {
                 Ok(_) => {
-                    println!("ok");
+                    // println!("ok");
                 }
                 Err(err) => {
                     eprintln!("{err}");
@@ -111,7 +111,7 @@ async fn connect(request: &Request) -> io::Result<TcpStream> {
     let stream = match request.address.addr {
         InnerAddress::SocketAddr(ref addr) => TcpStream::connect(addr).await?,
         InnerAddress::DomainAddr(ref domain, port) => {
-            TcpStream::connect((domain.clone(), port)).await?
+            TcpStream::connect((domain.as_str(), port)).await?
         }
     };
     stream.set_nodelay(crate::NODELAY)?;

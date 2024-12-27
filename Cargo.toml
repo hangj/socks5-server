@@ -10,11 +10,11 @@ name = "server"
 path = "src/server.rs"
 
 [dependencies]
-anyhow = "1.0.70"
-byteorder = "1.4.3"
-bytes = "1.4.0"
-tokio = { version = "1.27.0", features = ["io-util", "net", "rt-multi-thread", "macros"] }
-inttype-enum = "0.1.2"
+anyhow = "1.0"
+byteorder = "1.5"
+bytes = "1.9"
+tokio = { version = "1.42", features = ["io-util", "net", "rt-multi-thread", "macros"] }
+inttype-enum = "0.1"
 
 
 [patch.crates-io]

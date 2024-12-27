@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
-/// https://www.rfc-editor.org/rfc/rfc1928.html
+//! https://www.rfc-editor.org/rfc/rfc1928.html
+
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use inttype_enum::IntType;
@@ -46,7 +47,10 @@ pub struct Request {
 impl Request {
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
         let ver = s.read_u8().await?;
-        let cmd = s.read_u8().await?.try_into()?;
+        let cmd =
+            s.read_u8().await?.try_into().map_err(|x: u8| {
+                std::io::Error::new(std::io::ErrorKind::Unsupported, x.to_string())
+            })?;
         let rsv = s.read_u8().await?;
         let address = Address::from_stream(s).await?;
 
@@ -134,7 +138,10 @@ pub struct Address {
 
 impl Address {
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
-        let atyp = s.read_u8().await?.try_into()?;
+        let atyp =
+            s.read_u8().await?.try_into().map_err(|x: u8| {
+                std::io::Error::new(std::io::ErrorKind::Unsupported, x.to_string())
+            })?;
         let address = match atyp {
             AddressType::Ipv4 => {
                 let mut buf = [0u8; 4];
