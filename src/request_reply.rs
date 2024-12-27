@@ -49,7 +49,7 @@ impl Request {
         let ver = s.read_u8().await?;
         let cmd =
             s.read_u8().await?.try_into().map_err(|x: u8| {
-                std::io::Error::new(std::io::ErrorKind::Unsupported, x.to_string())
+                io::Error::new(io::ErrorKind::Unsupported, x.to_string())
             })?;
         let rsv = s.read_u8().await?;
         let address = Address::from_stream(s).await?;
@@ -140,7 +140,7 @@ impl Address {
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
         let atyp =
             s.read_u8().await?.try_into().map_err(|x: u8| {
-                std::io::Error::new(std::io::ErrorKind::Unsupported, x.to_string())
+                io::Error::new(io::ErrorKind::Unsupported, x.to_string())
             })?;
         let address = match atyp {
             AddressType::Ipv4 => {
