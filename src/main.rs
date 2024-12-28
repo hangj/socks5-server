@@ -1,6 +1,8 @@
 mod method_selection;
 mod request_reply;
 
+use std::net::SocketAddr;
+
 use method_selection::*;
 use request_reply::*;
 
@@ -11,11 +13,18 @@ use tokio::{
 
 const SOCKS_VERSION_5: u8 = 0x05;
 const NODELAY: bool = true;
-const TTL: u32 = 15;
+const TTL: u32 = 64;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let listener = TcpListener::bind("0.0.0.0:1080").await?;
+    let args = std::env::args().collect::<Vec<_>>();
+    if args.len() < 2 {
+        return Err(anyhow::anyhow!("Usage: {} <addr:port>\n\nExample: {} 0.0.0.0:1080", args[0], args[0]));
+    }
+
+    let addr: SocketAddr = args[1].parse()?;
+
+    let listener = TcpListener::bind(addr).await?;
     let local_addr = listener.local_addr()?;
     println!("Listening on local address: {:?}", local_addr);
 
@@ -29,8 +38,8 @@ async fn main() -> anyhow::Result<()> {
                 Ok(_) => {
                     // println!("ok");
                 }
-                Err(err) => {
-                    eprintln!("{err}");
+                Err(e) => {
+                    eprintln!("err: {e}");
                     let _ = conn.shutdown().await;
                 }
             }

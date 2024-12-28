@@ -115,6 +115,7 @@ impl Default for MethodSelectionResponse {
 /// o  X'FF' NO ACCEPTABLE METHODS
 #[derive(Debug, IntType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
+#[non_exhaustive]
 pub enum Method {
     NoAuthenticationRequired = 0x00,
     Gssapi = 0x01,

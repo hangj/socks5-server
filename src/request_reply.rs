@@ -72,6 +72,7 @@ impl Request {
 
 #[derive(Debug, IntType)]
 #[repr(u8)]
+#[non_exhaustive]
 pub enum Cmd {
     /// CONNECT
     ///
@@ -212,6 +213,7 @@ pub enum InnerAddress {
 
 #[derive(Debug, Clone, Copy, IntType)]
 #[repr(u8)]
+#[non_exhaustive]
 pub enum AddressType {
     Ipv4 = 0x01,
     Domain = 0x03,
