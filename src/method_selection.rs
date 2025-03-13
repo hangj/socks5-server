@@ -78,10 +78,10 @@ pub struct MethodSelectionResponse {
 }
 
 impl MethodSelectionResponse {
-    pub fn unacceptable() -> Self {
+    pub fn no_acceptable_method() -> Self {
         Self {
             ver: crate::SOCKS_VERSION_5,
-            method: Method::UnacceptableMethod,
+            method: Method::NoAcceptableMethod,
         }
     }
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
@@ -121,5 +121,5 @@ pub enum Method {
     Gssapi = 0x01,
     UsernamePassword = 0x02,
     #[default]
-    UnacceptableMethod = 0xff,
+    NoAcceptableMethod = 0xff,
 }

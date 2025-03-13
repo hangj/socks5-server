@@ -16,21 +16,20 @@ const NODELAY: bool = true;
 const TTL: u32 = 64;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> io::Result<()> {
     let args = std::env::args().collect::<Vec<_>>();
     if args.len() < 2 {
-        return Err(anyhow::anyhow!("Usage: {} <addr:port>\n\nExample: {} 0.0.0.0:1080", args[0], args[0]));
+        let e = io::Error::other(format!("Usage: {} <addr:port>\n\nExample: {} 0.0.0.0:1080", args[0], args[0]));
+        return Err(e);
     }
 
-    let addr: SocketAddr = args[1].parse()?;
-
-    let listener = TcpListener::bind(addr).await?;
+    let listener = TcpListener::bind(&args[1]).await?;
     let local_addr = listener.local_addr()?;
     println!("Listening on local address: {:?}", local_addr);
 
     while let Ok((mut conn, addr)) = listener.accept().await {
-        conn.set_nodelay(crate::NODELAY)?;
-        conn.set_ttl(crate::TTL)?;
+        let _ = conn.set_nodelay(crate::NODELAY);
+        let _ = conn.set_ttl(crate::TTL);
 
         tokio::spawn(async move {
             println!("new connection from: {:?}", addr);
@@ -72,7 +71,7 @@ async fn method_select(conn: &mut TcpStream) -> io::Result<()> {
             .writeto_stream(conn)
             .await?;
     } else {
-        MethodSelectionResponse::unacceptable()
+        MethodSelectionResponse::no_acceptable_method()
             .writeto_stream(conn)
             .await?;
         return Err(io::Error::new(
