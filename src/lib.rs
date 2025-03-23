@@ -36,7 +36,7 @@ impl Server {
     pub async fn run<A: ToSocketAddrs>(&self, addr: A) -> io::Result<()> {
         let listener = TcpListener::bind(addr).await?;
         let local_addr = listener.local_addr()?;
-        println!("Listening on address: {:?}", local_addr);
+        println!("Listening on address: {:?}, user_pass: {:?}", local_addr, &*self.name_pass);
 
         while let Ok((mut conn, addr)) = listener.accept().await {
             let _ = conn.set_nodelay(NODELAY);
@@ -116,7 +116,7 @@ impl Server {
                 .await?;
             Err(io::Error::new(
                 io::ErrorKind::Unsupported,
-                "unsupported method",
+                "no acceptable method",
             ))
         }
     }
