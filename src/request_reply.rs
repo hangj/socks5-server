@@ -4,7 +4,7 @@
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 
-use inttype_enum::IntType;
+use inttype_enum::{IntRange, IntType};
 use tokio::io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 /// Once the method-dependent subnegotiation has completed, the client
@@ -47,10 +47,11 @@ pub struct Request {
 impl Request {
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
         let ver = s.read_u8().await?;
-        let cmd =
-            s.read_u8().await?.try_into().map_err(|x: u8| {
-                io::Error::new(io::ErrorKind::Unsupported, x.to_string())
-            })?;
+        let cmd = s
+            .read_u8()
+            .await?
+            .try_into()
+            .map_err(|x: u8| io::Error::new(io::ErrorKind::Unsupported, x.to_string()))?;
         let rsv = s.read_u8().await?;
         let address = Address::from_stream(s).await?;
 
@@ -139,10 +140,11 @@ pub struct Address {
 
 impl Address {
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
-        let atyp =
-            s.read_u8().await?.try_into().map_err(|x: u8| {
-                io::Error::new(io::ErrorKind::Unsupported, x.to_string())
-            })?;
+        let atyp = s
+            .read_u8()
+            .await?
+            .try_into()
+            .map_err(|x: u8| io::Error::new(io::ErrorKind::Unsupported, x.to_string()))?;
         let address = match atyp {
             AddressType::Ipv4 => {
                 let mut buf = [0u8; 4];
@@ -252,15 +254,15 @@ pub enum AddressType {
 ///              o  IP V6 address: X'04'
 ///           o  BND.ADDR       server bound address
 ///           o  BND.PORT       server bound port in network octet order
-pub struct Reply {
+pub struct Reply<'a> {
     pub ver: u8,
     pub rep: ReplyStatus,
     pub rsv: u8,
-    pub address: Address,
+    pub address: &'a Address,
 }
 
-impl Reply {
-    pub fn new(rep: ReplyStatus, address: Address) -> Self {
+impl<'a> Reply<'a> {
+    pub fn new(rep: ReplyStatus, address: &'a Address) -> Self {
         Self {
             ver: crate::SOCKS_VERSION_5,
             rep,
@@ -278,11 +280,13 @@ impl Reply {
     }
 }
 
-#[derive(Debug, Copy, Clone, IntType)]
+#[derive(IntRange, Debug, Copy, Clone)]
 #[repr(u8)]
 pub enum ReplyStatus {
     Succeeded = 0x00,
+    /// general SOCKS server failure
     GeneralSocksServerFailure = 0x01,
+    /// connection not allowed by ruleset
     ConnectionNotAllowed = 0x02,
     NetworkUnreachable = 0x03,
     HostUnreachable = 0x04,
@@ -290,35 +294,25 @@ pub enum ReplyStatus {
     TtlExpired = 0x06,
     CommandNotSupported = 0x07,
     AddressTypeNotSupported = 0x08,
-    Unassigned = 0xff,
+    /// X'09' to X'FF' unassigned
+    #[range(0x09..=0xFF)]
+    Unassigned(u8),
 }
 
 impl From<io::ErrorKind> for ReplyStatus {
     fn from(value: io::ErrorKind) -> Self {
         match value {
-            io::ErrorKind::NotFound => todo!(),
-            io::ErrorKind::PermissionDenied => todo!(),
+            // io::ErrorKind::NotFound => todo!(),
+            io::ErrorKind::PermissionDenied => Self::ConnectionNotAllowed,
             io::ErrorKind::ConnectionRefused => Self::ConnectionRefused,
-            io::ErrorKind::ConnectionReset => todo!(),
-            // io::ErrorKind::HostUnreachable => todo!(),
-            // io::ErrorKind::NetworkUnreachable => Self::NetworkUnreachable,
-            io::ErrorKind::ConnectionAborted => todo!(),
-            io::ErrorKind::NotConnected => todo!(),
-            io::ErrorKind::AddrInUse => todo!(),
-            io::ErrorKind::AddrNotAvailable => todo!(),
+            // io::ErrorKind::ConnectionReset => todo!(),
+            io::ErrorKind::HostUnreachable => Self::HostUnreachable,
+            io::ErrorKind::NetworkUnreachable => Self::NetworkUnreachable,
+            // io::ErrorKind::ConnectionAborted => todo!(),
+            // io::ErrorKind::NotConnected => todo!(),
+            // io::ErrorKind::AddrInUse => todo!(),
+            // io::ErrorKind::AddrNotAvailable => todo!(),
             // io::ErrorKind::NetworkDown => todo!(),
-            io::ErrorKind::BrokenPipe => todo!(),
-            io::ErrorKind::AlreadyExists => todo!(),
-            io::ErrorKind::WouldBlock => todo!(),
-            io::ErrorKind::InvalidInput => todo!(),
-            io::ErrorKind::InvalidData => todo!(),
-            io::ErrorKind::TimedOut => Self::TtlExpired,
-            io::ErrorKind::WriteZero => todo!(),
-            io::ErrorKind::Interrupted => todo!(),
-            io::ErrorKind::Unsupported => todo!(),
-            io::ErrorKind::UnexpectedEof => todo!(),
-            io::ErrorKind::OutOfMemory => todo!(),
-            io::ErrorKind::Other => todo!(),
             _ => Self::GeneralSocksServerFailure,
         }
     }

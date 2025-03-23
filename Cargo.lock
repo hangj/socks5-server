@@ -58,9 +58,9 @@ checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
 name = "inttype-enum"
-version = "0.1.5"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d4d0cf58faabd13879d00dcde01c129b5f3202c3a9973af59782af70ea7928b"
+checksum = "e0db67983f25fae76e3e27a9d3bfd4bb50088a2e0f82755f931c066f87ac4afc"
 dependencies = [
  "quote",
  "syn",

@@ -13,7 +13,7 @@
 ```sh
 git clone https://github.com/hangj/socks5-server.git
 cd socks5-server
-cargo r --release
-curl -x socks5://localhost:1080 https://ipinfo.io/ip
+cargo r --release 127.0.0.1:1080
+curl -x socks5://username:password@localhost:1080 https://ipinfo.io/ip
 ```
 

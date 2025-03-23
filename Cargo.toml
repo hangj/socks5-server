@@ -10,7 +10,7 @@ edition = "2021"
 byteorder = "1.5"
 bytes = "1.10"
 tokio = { version = "1.44", features = ["io-util", "net", "rt-multi-thread", "macros"] }
-inttype-enum = "0.1"
+inttype-enum = "0.2"
 
 
 [patch.crates-io]

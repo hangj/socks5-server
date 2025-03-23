@@ -14,7 +14,7 @@
 //!    request, and either establishes the appropriate connection or denies
 //!    it.
 
-use inttype_enum::IntType;
+use inttype_enum::IntRange;
 use tokio::io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 ///
@@ -27,39 +27,48 @@ use tokio::io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 /// | 1  |    1     | 1 to 255 |  
 /// +----+----------+----------+  
 ///
-#[derive(Debug)]
 pub struct MethodSelectionRequest {
     pub ver: u8, // 0x05
     nmethods: u8,
-    pub methods: Vec<Method>, // 1 to 255
+    methods: [u8; u8::MAX as usize],
+}
+
+use std::fmt::Debug;
+
+impl Debug for MethodSelectionRequest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MethodSelectionRequest")
+            .field("ver", &self.ver)
+            .field("nmethods", &self.nmethods)
+            .field("methods", &self.methods())
+            .finish()
+    }
 }
 
 impl MethodSelectionRequest {
+    #[inline]
+    pub fn methods(&self) -> &[u8] {
+        &self.methods[..self.nmethods as usize]
+    }
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
         let ver = s.read_u8().await?;
         let nmethods = s.read_u8().await?;
-        let mut methods = vec![0u8; nmethods as usize];
-        s.read_exact(&mut methods).await?;
+        let mut methods = [0xffu8; u8::MAX as usize];
+
+        let n = nmethods as usize;
+        let buf = &mut methods[..n];
+        s.read_exact(buf).await?;
 
         Ok(Self {
             ver,
             nmethods,
-            methods: methods
-                .into_iter()
-                .map(|m| m.into())
-                .collect::<Vec<Method>>(),
+            methods,
         })
     }
     pub async fn writeto_stream<S: AsyncWrite + Unpin>(&self, s: &mut S) -> io::Result<()> {
         s.write_u8(self.ver).await?;
         s.write_u8(self.nmethods).await?;
-        let methods = self
-            .methods
-            .iter()
-            .map(|m| (*m).into())
-            .collect::<Vec<u8>>();
-        assert_eq!(self.nmethods as usize, methods.len());
-        s.write(&methods).await?;
+        s.write_all(self.methods()).await?;
         Ok(())
     }
 }
@@ -78,10 +87,28 @@ pub struct MethodSelectionResponse {
 }
 
 impl MethodSelectionResponse {
+    pub fn no_auth_method() -> Self {
+        Self {
+            ver: crate::SOCKS_VERSION_5,
+            method: Method::NoAuthenticationRequired,
+        }
+    }
+    pub fn gssapi_method() -> Self {
+        Self {
+            ver: crate::SOCKS_VERSION_5,
+            method: Method::Gssapi,
+        }
+    }
+    pub fn username_password_method() -> Self {
+        Self {
+            ver: crate::SOCKS_VERSION_5,
+            method: Method::UsernamePassword,
+        }
+    }
     pub fn no_acceptable_method() -> Self {
         Self {
             ver: crate::SOCKS_VERSION_5,
-            method: Method::NoAcceptableMethod,
+            method: Method::NoAcceptable,
         }
     }
     pub async fn from_stream<S: AsyncRead + Unpin>(s: &mut S) -> io::Result<Self> {
@@ -96,15 +123,6 @@ impl MethodSelectionResponse {
     }
 }
 
-impl Default for MethodSelectionResponse {
-    fn default() -> Self {
-        Self {
-            ver: crate::SOCKS_VERSION_5,
-            method: Method::NoAuthenticationRequired,
-        }
-    }
-}
-
 /// The values currently defined for METHOD are:
 ///
 /// o  X'00' NO AUTHENTICATION REQUIRED
@@ -113,13 +131,17 @@ impl Default for MethodSelectionResponse {
 /// o  X'03' to X'7F' IANA ASSIGNED
 /// o  X'80' to X'FE' RESERVED FOR PRIVATE METHODS
 /// o  X'FF' NO ACCEPTABLE METHODS
-#[derive(Debug, IntType, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(IntRange, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
-#[non_exhaustive]
 pub enum Method {
     NoAuthenticationRequired = 0x00,
     Gssapi = 0x01,
     UsernamePassword = 0x02,
-    #[default]
-    NoAcceptableMethod = 0xff,
+    /// X'03' to X'7F' IANA ASSIGNED
+    #[range(0x03..=0x7f)]
+    Iana(u8),
+    /// X'80' to X'FE' RESERVED FOR PRIVATE METHODS
+    #[range(0x80..=0xfe)]
+    ReservedForPrivate(u8),
+    NoAcceptable = 0xff,
 }
