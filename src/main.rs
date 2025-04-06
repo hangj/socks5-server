@@ -6,11 +6,11 @@ use std::net::ToSocketAddrs;
 async fn main() -> io::Result<()> {
     let args = std::env::args().collect::<Vec<_>>();
     if args.len() < 2 {
-        let e = io::Error::other(format!(
-            "Usage: {} <addr:port>\n\nExample: {} 0.0.0.0:1080",
+        eprintln!(
+            "Usage: {} [username:password@]<addr:port>\n\nExample: {} 0.0.0.0:1080",
             args[0], args[0]
-        ));
-        return Err(e);
+        );
+        std::process::exit(1);
     }
 
     let Args { addr, user_pass } = parse(&args[1])?;
@@ -69,4 +69,3 @@ fn parse(arg: &str) -> io::Result<Args> {
         user_pass,
     })
 }
-
